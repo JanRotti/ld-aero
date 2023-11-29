@@ -7,4 +7,4 @@ from .vector_quantizer import VectorQuantizer
 from .UNet import UNet
 from .ddpm import GaussianDiffusion
 from .train import train
-
+from .rae import RAEFlowFieldsDataset

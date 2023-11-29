@@ -1,2 +1,6 @@
-# ml-dev
-Simple repository to track some code development for my current research.
+# ld-aero
+The goal of this repository is research and development towards Latent Diffusion like generative models for design space exploration of aerodynamic datasets. 
+The code base is mostly based on adapted versions of existing code repositories with some utility functions.
+
+## References
+1. [latent-diffusion](https://github.com/CompVis/latent-diffusion) 
