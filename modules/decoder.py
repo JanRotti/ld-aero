@@ -10,8 +10,8 @@ from .utils import get_norm
 class Decoder(nn.Module):
     
     def __init__(self,
-        base_channel,
         out_channels,
+        base_channel,
         emb_dim,
         channel_multipliers=(1, 2, 4, 8),
         num_res_blocks=1,

@@ -11,3 +11,5 @@ from .train import train
 from .rae import RAEFlowFieldsDataset
 from .encoder import Encoder
 from .decoder import Decoder
+from .vae import VAE
+from .vqvae import VQVAE

@@ -51,6 +51,7 @@ class Encoder(nn.Module):
                                          time_emb_dim=self.time_emb_dim,
                                          dropout=dropout,
                                          norm=norm,
+                                         num_groups=num_groups,
                                          use_attention=i in attention_resolutions))
                 block_in = block_out
             block = nn.Module()
