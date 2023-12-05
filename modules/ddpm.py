@@ -22,6 +22,7 @@ class EMA():
             old, new = ema_params.data, current_params.data
             ema_params.data = self.update_average(old, new)
 
+
 class GaussianDiffusion(nn.Module):
     __doc__ = r"""Gaussian Diffusion model. Forwarding through the module returns diffusion reversal scalar loss tensor.
 

@@ -23,5 +23,5 @@ class Upsample(nn.Module):
             nn.Conv2d(in_channels, in_channels, 3, padding=1),
         )
     
-    def forward(self, x, time_emb, y):
+    def forward(self, x, time_emb=None, y=None):
         return self.upsample(x)

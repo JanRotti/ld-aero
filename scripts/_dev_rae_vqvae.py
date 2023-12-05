@@ -10,10 +10,16 @@ from scipy.ndimage import zoom
 from modules import *
 
 def sample_transform(sample):
+    # Make sample square
+    w, h, c = sample.shape
+    cut = min(w, h) 
     # Use single channel
-    sample = sample[:,:,0]
+    sample = sample[:cut,:cut,0]
+    # Desired dim
+    ddim = 256
+    zoom_factor = ddim / cut
     # Downsample 
-    sample = zoom(sample, .25)
+    sample = zoom(sample, zoom_factor)
     # Add channel dim back
     sample = np.expand_dims(sample, 0)
     # Convert to torch tensor

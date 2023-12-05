@@ -19,7 +19,7 @@ class Downsample(nn.Module):
 
         self.downsample = nn.Conv2d(in_channels, in_channels, 3, stride=2, padding=1)
     
-    def forward(self, x, time_emb, y):
+    def forward(self, x, time_emb=None, y=None):
         if x.shape[2] % 2 == 1:
             raise ValueError("downsampling tensor height should be even")
         if x.shape[3] % 2 == 1:
