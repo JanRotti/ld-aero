@@ -20,7 +20,16 @@ class VQVAE(nn.Module):
         **kwargs
         ):
         super().__init__()
-        self.emb_dim = emb_dim
+        self.in_channels=in_channels
+        self.base_channels=base_channels
+        self.emb_dim=emb_dim
+        self.num_embeddings=num_embeddings
+        self.channel_multipliers=channel_multipliers
+        self.num_res_blocks=num_res_blocks
+        self.time_emb_dim=time_emb_dim
+        self.dropout=dropout
+        self.norm=norm
+        self.num_groups=num_groups
 
         self.encoder = Encoder(in_channels, 
                                base_channels, 
@@ -58,12 +67,11 @@ class VQVAE(nn.Module):
         return z
     
 
-    def forward(self, x, time_emb=None):
+    def forward(self, x, y=None, time_emb=None):
         z = self.encoder(x, time_emb=time_emb)
         quant, _ = self.quantize(z)
         x_r = self.decode(quant, time_emb=time_emb)
         return x_r
-    
     
     def loss(self, x, time_emb=None, y=None, measure='l2', vq_weight=1):
         rec_loss = 0

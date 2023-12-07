@@ -122,7 +122,22 @@ def train(
             torch.save(optimizer.state_dict(), optim_filename)
 
             if chkpt_callback is not None:
-                chkpt_callback()
+                chkpt_callback(
+                    model=model,
+                    optimizer=optimizer,
+                    loss_function=loss_function,
+                    train_data=train_data,
+                    test_data=test_data,
+                    iteration=iteration,
+                    iterations=iterations,
+                    run_name=run_name,
+                    log_to_wandb=log_to_wandb,
+                    wandb_dir=wandb_dir,
+                    img_dir=img_dir,
+                    log_dir=log_dir,
+                    entity=entity,
+                    project_name=project_name,
+                )
 
     return None
 

@@ -20,7 +20,7 @@ class Decoder(nn.Module):
         dropout=0.0,
         norm="bn",
         num_groups=32,
-        output_activation=nn.Tanh(),
+        output_activation=nn.Sigmoid(),
         **kwargs
         ):
 

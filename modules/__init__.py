@@ -13,3 +13,4 @@ from .encoder import Encoder
 from .decoder import Decoder
 from .vae import VAE
 from .vqvae import VQVAE
+from .vis_utils import *

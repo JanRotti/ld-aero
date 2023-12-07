@@ -46,7 +46,6 @@ class GaussianDiffusion(nn.Module):
         model,
         img_size,
         img_channels,
-        num_classes,
         betas,
         loss_type="l2",
         ema_decay=0.9999,
@@ -66,8 +65,7 @@ class GaussianDiffusion(nn.Module):
 
         self.img_size = img_size
         self.img_channels = img_channels
-        self.num_classes = num_classes
-
+        
         if loss_type not in ["l1", "l2"]:
             raise ValueError("__init__() got unknown loss type")
 
