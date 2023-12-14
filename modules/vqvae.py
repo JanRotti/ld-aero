@@ -61,11 +61,9 @@ class VQVAE(nn.Module):
         quant, emb_loss = self.quantize(z)
         return quant, emb_loss
 
-
     def decode(self, z, time_emb=None):
         z = self.decoder(z, time_emb=time_emb)
         return z
-    
 
     def forward(self, x, y=None, time_emb=None):
         z = self.encoder(x, time_emb=time_emb)

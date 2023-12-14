@@ -36,3 +36,35 @@ def visualize_rae_sample(
         })
 
     plt.savefig(f"{img_dir}/{project_name}-{run_name}-iteration-{iteration}-model.png")
+
+def vqvae_chkpt_callback(
+    model,
+    train_data=None,
+    project_name=None,
+    run_name=None,
+    iteration=None,
+    **kwargs
+    ):
+    
+    model.eval()  # Set the model to evaluation mode
+
+    with torch.no_grad():  # No need to calculate gradients for this
+        for samples, y in vis_samples_loader:
+            # Assuming your DataLoader returns just images, adjust if it returns a tuple (images, labels) or similar
+            reconstructions = model(samples.to(device)).to('cpu')
+
+            # Concatenate original images and reconstructions
+            comparison = torch.cat([samples, reconstructions])
+            comparison = comparison[:,:1,:,:]
+            
+            # Create a grid of images
+            grid = torchvision.utils.make_grid(comparison, nrow=n_samples, padding=2, normalize=True)
+
+            # Convert the tensor to a PIL image and display it
+            plt.imshow(grid.permute(1, 2, 0).numpy())
+            plt.text(0.5,0.0,f"Project: {project_name}\nRun: {run_name}\nTime: {datetime.datetime.now().replace(second=0, microsecond=0)}\nIteration: {iteration}\n")
+            plt.axis('off')
+            plt.show()
+        
+    model.train()
+    return None
