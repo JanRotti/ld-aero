@@ -78,19 +78,17 @@ def main():
     test_data = torch.utils.data.DataLoader(test_split, batch_size=8,
             shuffle=True)
     
-    n_samples = 5
-    subset = torch.utils.data.Subset(train_data.dataset,np.random.randint(0,len(train_data.dataset), size=(n_samples)))
-    vis_samples_loader = torch.utils.data.DataLoader(subset, batch_size=n_samples, shuffle=False)
     base_channels = 16
     channel_multipliers = (1,2,2,4,4) 
+    attention_resolutions = (1,2,3)
 
     model = VQVAE(
         8,
         base_channels,
         1, 
-        num_embeddings=20,
+        num_embeddings=100,
         channel_multipliers=channel_multipliers,
-        attention_resolutions=(1,2,3),
+        attention_resolutions=attention_resolutions,
         num_res_blocks=1,
         time_emb_dim=None,
         dropout=0.0,
@@ -110,7 +108,9 @@ def main():
         log_to_wandb=True,
         run_name=f"{datetime.datetime.now().replace(second=0, microsecond=0)}",
         project_name="VQVAE-RAE",
-        chkpt_callback=vqvae_chkpt_callback
+        chkpt_callback=vqvae_chkpt_callback,
+        model_checkpoint=None,
+        optim_checkpoint=None,
     )
 
     return None

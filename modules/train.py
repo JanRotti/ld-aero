@@ -137,6 +137,7 @@ def train(
                     log_dir=log_dir,
                     entity=entity,
                     project_name=project_name,
+                    device=device,
                 )
 
     return None
