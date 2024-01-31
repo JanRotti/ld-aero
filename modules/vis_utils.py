@@ -28,6 +28,7 @@ def visualize_rae_sample(
     samples = model.decode(z)
     grid_img = torchvision.utils.make_grid(samples, nrow=5, pad_value=2)
     grid_img = grid_img.permute(1, 2, 0)
+    plt.clf()
     plt.imshow(grid_img)
     plt.axis('off')
     plt.text(0.5,0.0,f"Project: {project_name}\nRun: {run_name}\nTime: {datetime.datetime.now().replace(second=0, microsecond=0)}\nIteration: {iteration}\n")
@@ -93,6 +94,7 @@ def visualize_mnist_sample(
     log_to_wandb,
     project_name,
     iterations,
+    device,
     **kwargs
     ):
 
@@ -104,6 +106,7 @@ def visualize_mnist_sample(
     samples = torch.cat([x, x_hat], dim=0)
     grid_img = torchvision.utils.make_grid(samples, nrow=5, pad_value=2)
     grid_img = grid_img.permute(1, 2, 0)
+    plt.clf()
     plt.imshow(grid_img)
     plt.axis('off')
     plt.text(0.5,0.0,f"Project: {project_name}\nRun: {run_name}\nTime: {datetime.datetime.now().replace(second=0, microsecond=0)}\nIteration: {iteration}\n")
