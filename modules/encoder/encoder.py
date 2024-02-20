@@ -2,16 +2,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .res_block import ResidualBlock
-from .downsample import Downsample
-from .utils import get_norm
+from ..residual_block import ResidualBlock
+from ..misc import Downsample
+from ..util import get_norm
 
 class Encoder(nn.Module):
     
     def __init__(self, 
         in_channel,
         base_channel,
-        emb_dim,
+        z_channels,
         channel_multipliers=(1, 2, 4, 8),
         num_res_blocks=1,
         time_emb_dim=None,
@@ -20,14 +20,14 @@ class Encoder(nn.Module):
         num_groups=32,
         attention_resolutions=(),
         double_latent=False,
-        **kwargs
+        **ignore_kwargs
         ):
 
         super().__init__()
 
         self.in_channel = in_channel
         self.base_channel = base_channel
-        self.emb_dim = emb_dim
+        self.z_channels = z_channels
         self.num_res_blocks = num_res_blocks
         self.num_resolutions = len(channel_multipliers)
         self.channel_multipliers = (1,) + tuple(channel_multipliers)
@@ -82,7 +82,7 @@ class Encoder(nn.Module):
         # end
         self.norm_out = get_norm(norm, block_in, num_groups=num_groups)
         self.conv_out = nn.Conv2d(block_in, 
-                                2 * emb_dim if double_latent else emb_dim, 
+                                2 * z_channels if double_latent else z_channels, 
                                 kernel_size=3,
                                 stride=1,
                                 padding=1

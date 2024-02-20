@@ -1,0 +1,18 @@
+seed_everything: 42
+ckpt_path: null
+
+model:
+  class_path: modules.mlp.MLP
+
+data:
+  class_path: modules.mnist.MNISTDataModule
+  init_args:
+    batch_size: 128
+
+trainer:
+  logger:
+    class_path: pytorch_lightning.loggers.WandbLogger
+    init_args:
+      project: MyProject
+      log_model: all
+      offline: False
