@@ -19,7 +19,7 @@ class Encoder(nn.Module):
         norm="bn",
         num_groups=32,
         attention_resolutions=(),
-        double_latent=False,
+        double_z=False,
         **ignore_kwargs
         ):
 
@@ -82,7 +82,7 @@ class Encoder(nn.Module):
         # end
         self.norm_out = get_norm(norm, block_in, num_groups=num_groups)
         self.conv_out = nn.Conv2d(block_in, 
-                                2 * z_channels if double_latent else z_channels, 
+                                2 * z_channels if double_z else z_channels, 
                                 kernel_size=3,
                                 stride=1,
                                 padding=1

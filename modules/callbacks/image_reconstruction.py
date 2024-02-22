@@ -13,7 +13,7 @@ from lightning.pytorch.utilities import rank_zero_only
 class ImageLogger(Callback):
 
     def __init__(self, batch_frequency, max_images, clamp=True, increase_log_steps=False,
-                 rescale=True, disabled=False, log_on_batch_idx=False, log_first_step=False,
+                 rescale=False, disabled=False, log_on_batch_idx=False, log_first_step=False,
                  log_images_kwargs=None):
         super().__init__()
         self.rescale = rescale
@@ -42,12 +42,12 @@ class ImageLogger(Callback):
 
             pl_module.logger.log_image(
                 tag, img),
-                #global_step=pl_module.global_step)
+                #global_step=pl_module.global_step) # TODO: debug
 
     @rank_zero_only
     def log_local(self, save_dir, split, images,
                   global_step, current_epoch, batch_idx):
-        root = os.path.join(save_dir, "images", split)
+        root = os.path.join(save_dir, "img", split)
         for k in images:
             grid = torchvision.utils.make_grid(images[k], nrow=4)
             if self.rescale:
@@ -66,7 +66,7 @@ class ImageLogger(Callback):
 
     def log_img(self, pl_module, batch, batch_idx, split="train"):
         check_idx = batch_idx if self.log_on_batch_idx else pl_module.global_step
-        if (self.check_frequency(check_idx) and  # batch_idx % self.batch_freq == 0
+        if (self.check_frequency(check_idx) and 
                 hasattr(pl_module, "log_images") and
                 callable(pl_module.log_images) and
                 self.max_images > 0):
@@ -86,7 +86,6 @@ class ImageLogger(Callback):
                     images[k] = images[k].detach().cpu()
                     if self.clamp:
                         images[k] = torch.clamp(images[k], -1., 1.)
-                
             self.log_local(pl_module.logger.save_dir, split, images,
                            pl_module.global_step, pl_module.current_epoch, batch_idx)
 

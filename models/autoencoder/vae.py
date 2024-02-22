@@ -9,10 +9,11 @@ from modules.embedding import VectorQuantizer2 as VectorQuantizer
 from modules.distribution import DiagonalGaussianDistribution
 from modules.mnist import MNISTDataModule
 
-class VAE(pl.LightningModule):
+from .base import Autoencoder
+
+class VAE(Autoencoder):
     def __init__(self,
-                 enc_config,
-                 dec_config,
+                 config,
                  embed_dim,
                  ckpt_path=None,
                  ignore_keys=[],
@@ -23,13 +24,12 @@ class VAE(pl.LightningModule):
                  ):
         
         super().__init__()
-        #self.automatic_optimization = False
         self.image_key = image_key
-        self.encoder = Encoder(**enc_config)
-        self.decoder = Decoder(**dec_config)
-        assert enc_config["double_latent"]
-        self.quant_conv = torch.nn.Conv2d(2*enc_config["z_channels"], 2*embed_dim, 1)
-        self.post_quant_conv = torch.nn.Conv2d(embed_dim, enc_config["z_channels"], 1)
+        self.encoder = Encoder(**config)
+        self.decoder = Decoder(**config)
+        assert config["double_z"]
+        self.quant_conv = torch.nn.Conv2d(2*config["z_channels"], 2*embed_dim, 1)
+        self.post_quant_conv = torch.nn.Conv2d(embed_dim, config["z_channels"], 1)
         self.embed_dim = embed_dim
         self.kl_weight = kl_weight
         if colorize_nlabels is not None:
@@ -39,17 +39,6 @@ class VAE(pl.LightningModule):
             self.monitor = monitor
         if ckpt_path is not None:
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
-
-    def init_from_ckpt(self, path, ignore_keys=list()):
-        sd = torch.load(path, map_location="cpu")["state_dict"]
-        keys = list(sd.keys())
-        for k in keys:
-            for ik in ignore_keys:
-                if k.startswith(ik):
-                    print("Deleting key {} from state_dict.".format(k))
-                    del sd[k]
-        self.load_state_dict(sd, strict=False)
-        print(f"Restored from {path}")
 
     def encode(self, x):
         h = self.encoder(x)
@@ -125,31 +114,3 @@ class VAE(pl.LightningModule):
 
     def get_last_layer(self):
         return self.decoder.conv_out.weight
-
-    @torch.no_grad()
-    def log_images(self, batch, only_inputs=False, **kwargs):
-        log = dict()
-        x = self.get_input(batch, self.image_key)
-        x = x.to(self.device)
-        if not only_inputs:
-            xrec, posterior = self(x)
-            if x.shape[1] > 3:
-                # colorize with random projection
-                assert xrec.shape[1] > 3
-                x = self.to_rgb(x)
-                xrec = self.to_rgb(xrec)
-            log["samples"] = self.decode(torch.randn_like(posterior.sample()))
-            log["reconstructions"] = xrec
-        log["inputs"] = x
-        return log
-
-    def to_rgb(self, x):
-        assert self.image_key == "segmentation"
-        if not hasattr(self, "colorize"):
-            self.register_buffer("colorize", torch.randn(3, x.shape[1], 1, 1).to(x))
-        x = F.conv2d(x, weight=self.colorize)
-        x = 2.*(x-x.min())/(x.max()-x.min()) - 1.
-        return x
-    
-
-class VAE2(pl.LightningModule)

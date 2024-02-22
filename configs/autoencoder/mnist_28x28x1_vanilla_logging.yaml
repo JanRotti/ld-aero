@@ -24,10 +24,19 @@ data:
     batch_size: 128
 
 trainer:
-  max_epochs: 3
+  max_epochs: 1000
+  logger:
+    class_path: lightning.pytorch.loggers.WandbLogger
+    init_args:
+      name: test
+      project: MINST_VAE
+      offline: False
+      save_dir: ./log
+
   callbacks: 
     - class_path: modules.callbacks.ImageLogger
       init_args:
-        batch_frequency: 1000
-        max_images: 8
+        batch_frequency: 10000
+        max_images: 12
         rescale: False
+

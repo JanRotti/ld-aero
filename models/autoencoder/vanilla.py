@@ -8,11 +8,14 @@ from modules.encoder import Encoder
 from modules.distribution import DiagonalGaussianDistribution
 from modules.mnist import MNISTDataModule
 
-class VanillaAE(pl.LightningModule):
+from .base import Autoencoder
+
+class VanillaAE(Autoencoder):
+    """
+    Vanilla Convolutional Autoencoder
+    """
     def __init__(self,
-                 enc_config,
-                 dec_config,
-                 loss=nn.MSELoss(),
+                 config,
                  ckpt_path=None,
                  ignore_keys=[],
                  image_key=None,
@@ -21,12 +24,12 @@ class VanillaAE(pl.LightningModule):
                  ):
         
         super().__init__()
-        #self.automatic_optimization = False
+
         self.image_key = image_key
-        self.encoder = Encoder(**enc_config)
-        self.decoder = Decoder(**dec_config)
-        self.loss = loss
-        self.embed_dim = enc_config["z_channels"]
+        
+        self.encoder = Encoder(**config)
+        self.decoder = Decoder(**config)
+
         if colorize_nlabels is not None:
             assert type(colorize_nlabels)==int
             self.register_buffer("colorize", torch.randn(3, colorize_nlabels, 1, 1))
@@ -34,17 +37,6 @@ class VanillaAE(pl.LightningModule):
             self.monitor = monitor
         if ckpt_path is not None:
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
-
-    def init_from_ckpt(self, path, ignore_keys=list()):
-        sd = torch.load(path, map_location="cpu")["state_dict"]
-        keys = list(sd.keys())
-        for k in keys:
-            for ik in ignore_keys:
-                if k.startswith(ik):
-                    print("Deleting key {} from state_dict.".format(k))
-                    del sd[k]
-        self.load_state_dict(sd, strict=False)
-        print(f"Restored from {path}")
 
     def encode(self, x):
         z = self.encoder(x)
@@ -70,7 +62,7 @@ class VanillaAE(pl.LightningModule):
         inputs = self.get_input(batch, self.image_key)
         reconstructions = self(inputs)
         
-        aeloss = self.loss(reconstructions, inputs)
+        aeloss = nn.MSELoss()(reconstructions, inputs)
         loss = aeloss
 
         log_dict_ae = {
@@ -84,7 +76,7 @@ class VanillaAE(pl.LightningModule):
     def validation_step(self, batch, batch_idx):
         inputs = self.get_input(batch, self.image_key)
         reconstructions = self(inputs)
-        aeloss = self.loss(reconstructions, inputs)
+        aeloss = F.mse_loss(reconstructions, inputs)
         loss = aeloss
         log_dict_ae = {"val/total_loss": loss.clone().detach().mean(),
                        "val/rec_loss": aeloss.detach().mean(),
@@ -111,7 +103,7 @@ class VanillaAE(pl.LightningModule):
         x = x.to(self.device)
         if not only_inputs:
             z = self.encode(x)
-            xrec = self(x)
+            xrec = self.decode(z)
             if x.shape[1] > 3:
                 # colorize with random projection
                 assert xrec.shape[1] > 3
@@ -121,12 +113,4 @@ class VanillaAE(pl.LightningModule):
             log["reconstructions"] = xrec
         log["inputs"] = x
         return log
-
-    def to_rgb(self, x):
-        assert self.image_key == "segmentation"
-        if not hasattr(self, "colorize"):
-            self.register_buffer("colorize", torch.randn(3, x.shape[1], 1, 1).to(x))
-        x = F.conv2d(x, weight=self.colorize)
-        x = 2.*(x-x.min())/(x.max()-x.min()) - 1.
-        return x
     

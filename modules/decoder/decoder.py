@@ -9,7 +9,7 @@ from ..util import get_norm
 class Decoder(nn.Module):
     
     def __init__(self,
-        out_channels,
+        in_channel,
         base_channel,
         z_channels,
         channel_multipliers=(1, 2, 4, 8),
@@ -26,7 +26,7 @@ class Decoder(nn.Module):
         super().__init__()
 
         self.base_channel = base_channel
-        self.out_channel = out_channels
+        self.out_channel = in_channel
         self.num_res_blocks = num_res_blocks
         self.num_resolutions = len(channel_multipliers)
         self.channel_multipliers = (1,) + tuple(channel_multipliers)
@@ -79,7 +79,7 @@ class Decoder(nn.Module):
         # end
         self.norm_out = get_norm(norm, block_in, num_groups=num_groups)
         self.conv_out = nn.Conv2d(block_in, 
-                                out_channels, 
+                                in_channel, 
                                 kernel_size=3,
                                 stride=1,
                                 padding=1
