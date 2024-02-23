@@ -7,7 +7,7 @@ model:
     config:
       in_channel: 1
       base_channel: 16
-      z_channels: 1
+      z_channels: 2
       channel_multipliers:
         - 1
         - 2
@@ -19,7 +19,7 @@ model:
         - 1
 
 data:
-  class_path: modules.mnist.MNISTDataModule
+  class_path: modules.datasets.mnist.MNISTDataModule
   init_args:
     batch_size: 128
 

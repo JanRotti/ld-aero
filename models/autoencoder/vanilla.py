@@ -6,7 +6,6 @@ import torch.nn.functional as F
 from modules.decoder import Decoder
 from modules.encoder import Encoder
 from modules.distribution import DiagonalGaussianDistribution
-from modules.mnist import MNISTDataModule
 
 from .base import Autoencoder
 

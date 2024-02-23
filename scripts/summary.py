@@ -20,11 +20,13 @@ def get_obj_from_str(string, reload=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Model Summary")
-    parser.add_argument("-c", "--config", type=str, help="Path to the config file", required=True)
+    parser.add_argument("-c", "--config", dest="config", type=str, help="Path to the config file", required=True)
+    parser.add_argument("-i", "--input_shape", dest="input_shape", nargs='*', type=int, help="Input shape as tuple", required=True, default=[1, 28, 28])
     args = parser.parse_args()
 
     # Load the config file
     config_file = args.config
+    input_shape = tuple(args.input_shape)
     with open(config_file, "r") as f:
         config = yaml.safe_load(f)
 
@@ -32,4 +34,4 @@ if __name__ == "__main__":
     model = instantiate_from_config(config["model"])
 
     # Generate the model summary
-    summary(model, input_size=(1, 28, 28))
+    summary(model, input_size=input_shape)

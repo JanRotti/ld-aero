@@ -1,0 +1,52 @@
+seed_everything: 42
+ckpt_path: null # for checkpointing
+
+data:
+  class_path: modules.datasets.rae.RAEDataModule
+  init_args:
+    batch_size: 16
+    num_workers: 0
+    normalize: True
+
+trainer:
+  max_epochs: 100 
+  logger:
+    class_path: lightning.pytorch.loggers.WandbLogger
+    init_args:
+      name: setup_run_1
+      project: RAE_VAE
+      offline: False
+      save_dir: ./log
+  callbacks: 
+    - class_path: modules.callbacks.ImageLogger
+      init_args:
+        batch_frequency: 100
+        max_images: 8
+        rescale: False
+
+# TEST model
+model:
+  class_path: models.autoencoder.vae.VAE
+  init_args:
+    learning_rate: 0.002
+    betas: 
+      - 0.9
+      - 0.99
+    config:
+      in_channel: 8
+      base_channel: 16
+      z_channels: 16
+      double_z: True
+      channel_multipliers:
+        - 1
+        - 4
+        - 8
+        - 16
+        - 16
+      num_res_blocks: 2
+      dropout: 0.0
+      norm: bn
+      attention_resolutions:
+        - 1
+        - 2
+        - 3

@@ -1,0 +1,35 @@
+seed_everything: 42
+ckpt_path: null
+
+model:
+  class_path: models.autoencoder.vae.VAE
+  init_args:
+    config:
+      in_channel: 1
+      base_channel: 16
+      z_channels: 2
+      channel_multipliers:
+        - 1
+        - 2
+        - 4
+      num_res_blocks: 1
+      dropout: 0.1
+      norm: bn
+      attention_resolutions:
+        - 1
+      double_z: True
+    kl_weight: 0.00025
+
+data:
+  class_path: modules.datasets.mnist.MNISTDataModule
+  init_args:
+    batch_size: 128
+
+trainer:
+  max_epochs: 1000
+  callbacks: 
+    - class_path: modules.callbacks.ImageLogger
+      init_args:
+        batch_frequency: 10000
+        max_images: 8
+        rescale: False

@@ -73,8 +73,9 @@ class RAE(Dataset):
         if self.normalize:
             sample = sample.sub(self.min[None, None, :]).div(self.max[None, None, :] - self.min[None, None, :])
         
+        sample = sample.permute(2, 0, 1)
         # Return sample and label as x, y 
-        return {"images": sample, "labels": label}
+        return {"image": sample, "label": label}
 
 
 class RAEDataModule(pl.LightningDataModule):

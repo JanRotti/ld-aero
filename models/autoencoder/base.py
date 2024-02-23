@@ -43,7 +43,7 @@ class Autoencoder(pl.LightningModule):
         x = batch[k]
         if len(x.shape) == 3:
             x = x[..., None]
-        x = x.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format).float()
+        #x = x.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format).float()
         return x
 
     @torch.no_grad()
@@ -58,7 +58,9 @@ class Autoencoder(pl.LightningModule):
                 assert xrec.shape[1] > 3
                 x = self.to_rgb(x)
                 xrec = self.to_rgb(xrec)
-            log["samples"] = self.decode(torch.randn_like(posterior.sample()))
+            random_tensor = torch.randn_like(posterior.sample())
+            random_tensor = torch.clamp(random_tensor, posterior.sample().min(), posterior.sample().max())
+            log["samples"] = self.decode(random_tensor)
             log["reconstructions"] = xrec
         log["inputs"] = x
         return log
