@@ -9,44 +9,42 @@ data:
     normalize: True
 
 trainer:
-  max_epochs: 10 
+  max_epochs: 100 
   logger:
     class_path: lightning.pytorch.loggers.WandbLogger
     init_args:
-      name: setup_run_1
-      project: RAE_VAE
+      name: run_24-02-2024-13:00:00
+      project: RAE_DCGAN
       offline: False
       save_dir: ./log
   callbacks: 
     - class_path: modules.callbacks.ImageLogger
       init_args:
-        batch_frequency: 100
+        batch_frequency: 1000
         max_images: 8
         rescale: False
 
-# TEST model
 model:
-  class_path: models.autoencoder.vae.VAE
+  class_path: models.GAN.dcgan.DCGAN
   init_args:
-    learning_rate: 0.002
-    betas: 
-      - 0.9
-      - 0.99
+    train_imbalance: 0.1
     config:
-      in_channel: 8
-      base_channel: 16
-      z_channels: 16
-      double_z: True
+      lr_gen: 0.0002
+      lr_dis: 0.0002
+      b1: 0.5
+      b2: 0.999
+      in_channels: 8
+      image_size: 
+        - 64
+        - 64
+      base_channels: 16
       channel_multipliers:
-        - 1
+        - 2
         - 4
         - 8
         - 16
-        - 16
-      num_res_blocks: 2
-      dropout: 0.0
-      norm: bn
-      attention_resolutions:
-        - 1
-        - 2
-        - 3
+        - 32
+      bias: False
+      latent_dim: 128
+      final_activation: 
+        class_path: torch.nn.modules.activation.Sigmoid

@@ -18,6 +18,8 @@ model:
       attention_resolutions:
         - 1
       double_z: True
+      final_activation:
+        class_path: torch.nn.Sigmoid
     kl_weight: 0.00025
 
 data:

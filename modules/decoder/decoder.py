@@ -19,7 +19,7 @@ class Decoder(nn.Module):
         dropout=0.0,
         norm="bn",
         num_groups=32,
-        output_activation=nn.Sigmoid(),
+        final_activation=nn.Sigmoid(),
         **kwargs
         ):
 
@@ -31,7 +31,7 @@ class Decoder(nn.Module):
         self.num_resolutions = len(channel_multipliers)
         self.channel_multipliers = (1,) + tuple(channel_multipliers)
         self.time_emb_dim = time_emb_dim
-        self.output_activation = output_activation
+        self.final_activation = final_activation
         # 
         block_in = base_channel * self.channel_multipliers[-1]
 
@@ -100,5 +100,5 @@ class Decoder(nn.Module):
         # final
         h = self.norm_out(h)
         h = self.conv_out(h)
-        h = self.output_activation(h)
+        h = self.final_activation(h)
         return h

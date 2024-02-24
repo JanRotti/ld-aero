@@ -21,11 +21,14 @@ class Encoder(nn.Module):
         self.base_channels = base_channels
 
         self.resblocks=[]
-        for i in range(self.image_layers):
+        self.resblocks.append(
+                ResidualLayer(channels=self.input_dim[0], downsize=True)
+            )
+        for i in range(1,self.image_layers):
             self.resblocks.append(
                 ResidualLayer(channels=self.base_channels*(i+1), downsize=True)
             )
-        self.conv = nn.Conv2D(self.base_channels * self.image_layers, self.latent_dim, kernel_size=(3,3), padding='same')  
+        self.conv = nn.Conv2d(self.base_channels * self.image_layers, self.latent_dim, kernel_size=(3,3), padding='same')  
         self.res_block_same = ResidualLayer(channels=self.latent_dim)
         
         wr, hr = (int(self.input_dim[1] / 2**self.image_layers), int(self.input_dim[2] / 2**self.image_layers))
@@ -53,5 +56,7 @@ class Encoder(nn.Module):
             tmp_mean += self.z_mean(z[:,i,:])
             tmp_var += self.z_var(z[:,i,:])
         
-        output = DiagonalGaussianDistribution(torch.cat((tmp_mean, tmp_var), dim=1))
-        return output.sample()
+        #output = DiagonalGaussianDistribution(torch.cat((tmp_mean, tmp_var), dim=1))
+        #output = output.sample()
+        output = (tmp_mean, tmp_var)
+        return output

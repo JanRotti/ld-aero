@@ -22,6 +22,7 @@ class VQVAE(Autoencoder):
                  monitor=None,
                  learning_rate=0.001,
                  betas=(0.9,0.99),
+                 final_activation=None,
                  ):
         
         super().__init__()
@@ -38,7 +39,8 @@ class VQVAE(Autoencoder):
         self.quant_conv = torch.nn.Conv2d(config["z_channels"], self.embed_dim, 1)
         self.quantize = VectorQuantizer(num_embeddings, self.embed_dim, self.commitment_scale)
         self.post_quant_conv = torch.nn.Conv2d(self.embed_dim, config["z_channels"], 1)
-        
+        self.final_activation = final_activation if final_activation else nn.Identity()
+
         if colorize_nlabels is not None:
             assert type(colorize_nlabels)==int
             self.register_buffer("colorize", torch.randn(3, colorize_nlabels, 1, 1))

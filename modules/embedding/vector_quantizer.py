@@ -61,13 +61,12 @@ class VectorQuantizer2(nn.Module):
     avoids costly matrix multiplications and allows for post-hoc remapping of indices.
     Adapted from: https://github.com/CompVis/taming-transformers/blob/master/taming/modules/vqvae/quantize.py
     """
-    def __init__(self, n_e, e_dim, beta, remap=None, unknown_index="random",
+    def __init__(self, n_e, e_dim, beta=0.25, remap=None, unknown_index="random",
                  sane_index_shape=False):
         super().__init__()
         self.n_e = n_e
         self.e_dim = e_dim
         self.beta = beta
-
         self.embedding = nn.Embedding(self.n_e, self.e_dim)
         self.embedding.weight.data.uniform_(-1.0 / self.n_e, 1.0 / self.n_e)
 

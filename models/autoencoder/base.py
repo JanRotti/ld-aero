@@ -53,20 +53,21 @@ class Autoencoder(pl.LightningModule):
         x = x.to(self.device)
         if not only_inputs:
             xrec, posterior = self(x)
+            random_tensor = torch.randn_like(posterior.sample())
+            random_tensor = torch.clamp(random_tensor, posterior.sample().min(), posterior.sample().max())
             if x.shape[1] > 3:
                 # colorize with random projection
                 assert xrec.shape[1] > 3
                 x = self.to_rgb(x)
                 xrec = self.to_rgb(xrec)
-            random_tensor = torch.randn_like(posterior.sample())
-            random_tensor = torch.clamp(random_tensor, posterior.sample().min(), posterior.sample().max())
-            log["samples"] = self.decode(random_tensor)
+                log["samples"] = self.to_rgb(self.decode(random_tensor))
+            else:
+                log["samples"] = self.decode(random_tensor)
             log["reconstructions"] = xrec
         log["inputs"] = x
         return log
 
     def to_rgb(self, x):
-        assert self.image_key == "segmentation"
         if not hasattr(self, "colorize"):
             self.register_buffer("colorize", torch.randn(3, x.shape[1], 1, 1).to(x))
         x = F.conv2d(x, weight=self.colorize)

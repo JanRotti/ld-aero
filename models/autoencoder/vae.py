@@ -29,7 +29,6 @@ class VAE(Autoencoder):
         self.betas = betas
         self.encoder = Encoder(**config)
         self.decoder = Decoder(**config)
-        
         assert config["double_z"]
         self.embed_dim = config["z_channels"]
         self.quant_conv = torch.nn.Conv2d(2*config["z_channels"], 2*self.embed_dim, 1)
@@ -72,11 +71,11 @@ class VAE(Autoencoder):
         kl_loss = torch.sum(kl_loss) / kl_loss.shape[0] * self.kl_weight
         loss = aeloss + kl_loss
 
-        log_dict_ae = {"train/total_loss": loss.clone().detach().mean(),
-                       "train/kl_loss": kl_loss.detach().mean(),
-                       "train/rec_loss": aeloss.detach().mean(),
+        log_dict_ae = {"total_loss": loss.clone().detach().mean(),
+                       "kl_loss": kl_loss.detach().mean(),
+                       "rec_loss": aeloss.detach().mean(),
                        }
-        self.log("aeloss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log("loss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
         return loss
 
@@ -88,11 +87,11 @@ class VAE(Autoencoder):
         kl_loss = torch.sum(kl_loss) / kl_loss.shape[0] * self.kl_weight
         loss = aeloss + kl_loss
 
-        log_dict_ae = {"val/total_loss": loss.clone().detach().mean(),
-                       "val/kl_loss": kl_loss.detach().mean(),
-                       "val/rec_loss": aeloss.detach().mean(),
+        log_dict_ae = {"total_loss": loss.clone().detach().mean(),
+                       "kl_loss": kl_loss.detach().mean(),
+                       "rec_loss": aeloss.detach().mean(),
                        }
-        self.log("val/aeloss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log("loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
         self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
         return loss
 

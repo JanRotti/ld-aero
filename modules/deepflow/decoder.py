@@ -1,9 +1,24 @@
 import torch
+import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+class MultiplyAddChannelsOneWeight(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.gamma = nn.Parameter(torch.zeros(()))
+
+    def forward(self, inputs):
+        if len(inputs) != 2:
+            raise Exception('A MultiplyAddChannelsOneWeight layer should have 2 inputs')
+
+        origin = inputs[0]
+        t2 = inputs[1]
+
+        return torch.add(torch.mul(t2, self.gamma), origin)
+
 class MultiHeadAttentionBlock(nn.Module):
-    def __init__(self, latent_dim=None, output_dim=None, heads=None, head_size=None, macMHA=True, macMLP=True, attention_map=False, name=None, mlp_second_dense=True, dropout=0.0):
+    def __init__(self, latent_dim=None, output_dim=None, heads=None, head_size=None, macMHA=True, macMLP=True, attention_map=False, mlp_second_dense=True, dropout=0.0, **kwargs):
         super(MultiHeadAttentionBlock, self).__init__()
         self.latent_dim = latent_dim
         self.heads = heads
@@ -112,23 +127,23 @@ class BaseLayer(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, input_shape=None, output_dim=None, biasOnOff=True, init=None,
-                 num_heads=8, filters_start=64, latent_dim=64, dropout=0.3, head_size=4, multipliers=None, pixelshuffle_smoothing=False, scale_layers=0, database=None):
+    def __init__(self, input_shape=None, output_shape=None, biasOnOff=True, init=None,
+                 num_heads=8, filters_start=64, latent_dim=64, dropout=0.3, head_size=4, multipliers=None, scale_layers=0, database=None, **kwargs):
         super(Decoder, self).__init__()
         self.epoch = 0
-        self.output_dim = output_dim
+        output_dim = output_shape
+        self.output_dim = output_shape
         self.input_dim = input_shape
         self.num_heads = num_heads
         self.head_size = head_size
         self.multpliers = multipliers
-        self.pixelshuffle_smoothing = pixelshuffle_smoothing
         self.latent_dim = latent_dim
         self.database = database
 
         f = filters_start
         self.flatten = nn.Flatten()
         self.pxlshuffle = []
-        self.pxlshuffle.append(PixelShuffle(scale=4, filter=f, pixelshuffle_smoothing=self.pixelshuffle_smoothing))
+        self.pxlshuffle.append(nn.PixelShuffle(4))
         self.c2d_0 = nn.Conv2d(input_shape[2], f, kernel_size=(3, 3), padding='same')
         self.c2d_concat = nn.Conv2d(f*2, f, kernel_size=(3, 3), padding='same')
         self.baselayer = BaseLayer(name="BaseLayer", num_heads=num_heads, head_size=self.head_size, dropout=dropout, multipliers=self.multpliers, filters=f)
@@ -146,7 +161,7 @@ class Decoder(nn.Module):
         bs = inp.shape[0]
         freevars = inp.shape[1]
         f = 32
-        repeat_num = int(np.log2(self.output_dim[0])) - 1
+        repeat_num = int(np.log2(self.output_dim[2])) - 1
         mult = 2 ** (repeat_num - 1)
         curr_filters = f * mult
         scale_counter = 0
@@ -166,5 +181,5 @@ class Decoder(nn.Module):
         generator = self.bn_out(generator)
         generator = F.swish(generator)
         generator = self.conv2dOut0(generator)
-        out = generator.view(bs, self.output_dim[0], self.output_dim[1], self.output_dim[2])
+        #out = generator.view(bs, self.output_dim[0], self.output_dim[1], self.output_dim[2])
         return out
