@@ -80,7 +80,7 @@ class RAE(Dataset):
 
 class RAEDataModule(pl.LightningDataModule):
     
-    def __init__(self, batch_size: int = 32, split=0.9, test_split=0.05, normalize=True, num_workers: int = 0):
+    def __init__(self, batch_size: int = 32, split=0.9, normalize=True, num_workers: int = 0):
         super().__init__()
         self.batch_size = batch_size
         self.split = split

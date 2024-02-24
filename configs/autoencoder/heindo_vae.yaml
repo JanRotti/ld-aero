@@ -1,0 +1,43 @@
+seed_everything: 42
+ckpt_path: null
+
+model:
+  class_path: models.autoencoder.vae.VAE
+  init_args:
+    config:
+      in_channel: 60
+      base_channel: 32
+      z_channels: 2
+      channel_multipliers:
+        - 1
+        - 2
+        - 4
+        - 8
+        - 16
+      num_res_blocks: 2
+      dropout: 0.05
+      norm: bn
+      attention_resolutions:
+        - 1
+        - 2
+        - 3
+      double_z: True
+      final_activation:
+        class_path: torch.nn.Identity
+    kl_weight: 0.00025
+    image_key: field
+
+data:
+  class_path: modules.datasets.hein_do.HeinDoDataModule
+  init_args:
+    batch_size: 8
+
+trainer:
+  max_epochs: 1000
+  log_every_n_steps: 10
+  callbacks: 
+    - class_path: modules.callbacks.ImageLogger
+      init_args:
+        batch_frequency: 500 # Every 10 epochs
+        max_images: 8
+        rescale: False
