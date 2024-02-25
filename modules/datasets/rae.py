@@ -1,18 +1,13 @@
-
 import os
 import torch
-import pandas as pd
 import numpy as np
 
-import lightning.pytorch as pl
-from torch.utils.data import Dataset, DataLoader, random_split
-from PIL import Image
-import torchvision.transforms as transforms
-from scipy.ndimage import zoom
-from skimage.measure import block_reduce
+DATA_ROOT = "/scratch/jrottmay/data/rae_rans"
+subset = "img_64x64"
 
-# PATH
-DATA_ROOT = "/scratch/jrottmay/data"
+import lightning.pytorch as pl
+import torchvision
+from torch.utils.data import Dataset, DataLoader, random_split
 
 class RAE(Dataset):
     """
@@ -21,121 +16,79 @@ class RAE(Dataset):
     interest.
     """
     def __init__(self, 
-        root_dir=f"{DATA_ROOT}/rae_rans/results", 
-        flow_dir="flow", 
-        label_file="misc/dvs.csv",
-        data_labels="misc/var_names.txt",
-        transform=None, 
+        root_dir=f"{DATA_ROOT}",
+        subset=f"{subset}",
         normalize=False
         ):
 
         self.root_dir = root_dir
-        self.flow_dir = flow_dir
-        self.labels = np.genfromtxt(os.path.join(root_dir, label_file), delimiter=",")
-        self.channel_names = pd.read_csv(os.path.join(root_dir, data_labels), header=None).values.flatten()
-        
-        self.transform = transform
+        self.subset = subset
+        self.file_list = os.listdir(os.path.join(root_dir, subset))
         self.normalize = normalize
-    
-        self.file_list = []
-        
-        self.max = torch.tensor([1.3474, 3.8084, 2.0157, 1.0562, 0.8013, 1.5173, 1.1547, 1.1359])
-        self.min = torch.tensor([0.0000,  0.0000,  0.0000, -0.6628, -0.7008,  0.0000, -1.7557,  0.0000])
-        
-        for file in os.listdir(os.path.join(root_dir, flow_dir)):
-            if not file.endswith(".npy"):
-                continue
-            self.file_list.append(os.path.join(root_dir, flow_dir, file))
-        assert len(self.file_list) > 0, "Number samples must be greater than 0."
-        assert len(self.file_list) == len(self.labels), "Number of samples and labels must match."
-        
+        self.max = torch.Tensor([1.3454, 3.7994, 1.9963, 1.0358, 0.6987, 1.5153, 1.1502, 1.1357])
+        self.min = torch.Tensor([0.0000, 0.0000, 0.0000, -0.6520, -0.5926,  0.0000, -1.7431, 0.0000])
+        self.norm = torchvision.transforms.Normalize(mean=self.min, std=self.max-self.min)
+
     def __len__(self):
         return len(self.file_list)
 
     def __getitem__(self, idx):
         if torch.is_tensor(idx):
             idx = idx.tolist()
+        
+        # load_index is different to idx since some simulations are missing
+        load_index = self.file_list[idx] 
 
-        file = os.path.join(self.root_dir, self.flow_dir, self.file_list[idx])
-        label = self.labels[idx]
+        file = os.path.join(self.root_dir, self.subset, load_index, f"{load_index}.npz")
         sample = np.load(file)
-        
-        # Convert to torch tensor
-        sample = torch.from_numpy(sample)
-        # Convert from double to single prec
-        sample = sample.type(torch.float)
 
-        # Apply transformation if available
-        if self.transform:
-            sample = self.transform(sample)
-
-        # Normalize if requested
-        if self.normalize:
-            sample = sample.sub(self.min[None, None, :]).div(self.max[None, None, :] - self.min[None, None, :])
-        
-        sample = sample.permute(2, 0, 1)
-        # Return sample and label as x, y 
-        return {"image": sample, "label": label}
+        output = {}
+        for key in sample.keys():
+            if key=="var_names":
+                output[key] = sample[key].tolist()
+            elif key=="field":
+                tmp = torch.permute(torch.as_tensor(sample[key], dtype=torch.float), (2,0,1))
+                output[key] = self.norm(tmp) if self.normalize else tmp
+            else:
+                output[key] = torch.as_tensor(sample[key], dtype=torch.float)
+        return output
 
 
 class RAEDataModule(pl.LightningDataModule):
-    
-    def __init__(self, batch_size: int = 32, split=0.9, normalize=True, num_workers: int = 0):
+    def __init__(self, batch_size: int = 32, subset="img_128x128", split=0.9, num_workers: int = 0, normalize=False):
         super().__init__()
         self.batch_size = batch_size
         self.split = split
-        self.normalize = normalize
         self.num_workers=num_workers
-        self.transform = example_transform
+        self.subset = subset
+        self.normalize = normalize
 
     def prepare_data(self):
         None
 
     def setup(self, stage: str):
-        rae_full = RAE(transform=self.transform, normalize=self.normalize)
-        l = len(rae_full)
+        full_data = RAE(subset=self.subset, normalize=self.normalize)
+        l = len(full_data)
         lts = int(l * self.split)
-        self.rae_train, self.rae_val = random_split(
-            rae_full, [lts, l-lts], generator=torch.Generator().manual_seed(42)
+        self.train, self.val = random_split(
+            full_data, [lts, l-lts], generator=torch.Generator().manual_seed(42)
         )
 
         # Assign test dataset for use in dataloader(s)
-        self.rae_test = self.rae_val
+        self.test = self.val
 
     def train_dataloader(self):
-        return DataLoader(self.rae_train, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
+        return DataLoader(self.train, batch_size=self.batch_size, num_workers=self.num_workers, shuffle=True)
 
     def val_dataloader(self):
-        return DataLoader(self.rae_val, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.val, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def test_dataloader(self):
-        return DataLoader(self.rae_test, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.test, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def predict_dataloader(self):
-        return DataLoader(self.rae_test, batch_size=self.batch_size, num_workers=self.num_workers)
+        return DataLoader(self.test, batch_size=self.batch_size, num_workers=self.num_workers)
 
     def teardown(self, stage: str):
         # Used to clean-up when the run is finished
-        None
-"""
-    downsamples the RAE dataset samples to 64x64x8
-"""
-def example_transform(sample):
-    # Make sample square
-    w, h, c = sample.shape
-    cut = min(w, h) 
-    # Use all channels
-    sample = sample[:cut,:cut,:] 
-    # Desired dim
-    ddim = 64
-    zoom_factor = ddim / cut
-    # Downsample 
-    channels = []
-    for i in range(c):
-        channel = zoom(sample[:, :, i], zoom_factor)
-        channels.append(channel)
-
-    sample = np.stack(channels, axis=-1)
-    sample = torch.from_numpy(sample)
-    return sample
-
+        None     

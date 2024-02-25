@@ -36,7 +36,7 @@ class UNet(nn.Module):
         self,
         img_channels,
         base_channels,
-        channel_mults=(1, 2, 4, 8),
+        channel_mults=[1, 2, 4, 8],
         num_res_blocks=2,
         time_emb_dim=None,
         time_emb_scale=1.0,

@@ -7,20 +7,21 @@ data:
     batch_size: 16
     num_workers: 0
     normalize: True
+    subset: img_64x64
 
 trainer:
-  max_epochs: 10 
-#  logger:
-#    class_path: lightning.pytorch.loggers.WandbLogger
-#    init_args:
-#      name: setup_run_1
-#      project: RAE_VAE
-#      offline: False
-#      save_dir: ./log
+  max_epochs: 1000 
+  logger:
+    class_path: lightning.pytorch.loggers.WandbLogger
+    init_args:
+      name: run_1
+      project: RAE_DEEPFLOW_VAE
+      offline: False
+      save_dir: ./log
   callbacks: 
     - class_path: modules.callbacks.ImageLogger
       init_args:
-        batch_frequency: 100
+        batch_frequency: 1000
         max_images: 8
         rescale: False
 
@@ -28,6 +29,7 @@ trainer:
 model:
   class_path: models.autoencoder.deepflow.DeepFlowVQVAE
   init_args:
+    image_key: "field"
     learning_rate: 0.002
     betas: 
       - 0.9
@@ -46,8 +48,8 @@ model:
         - 1
         - 2
         - 4
-        - 4
         - 8
+        - 16
       base_channel: 32
       latent_dim: 32
       image_layers: 2

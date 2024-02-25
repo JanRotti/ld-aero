@@ -64,6 +64,7 @@ class VAE(Autoencoder):
 
     def training_step(self, batch, batch_idx):
         inputs = self.get_input(batch, self.image_key)
+        batch_size = inputs.shape[0]
         reconstructions, posterior = self(inputs)
 
         aeloss = nn.MSELoss()(reconstructions, inputs)
@@ -75,12 +76,13 @@ class VAE(Autoencoder):
                        "kl_loss": kl_loss.detach().mean(),
                        "rec_loss": aeloss.detach().mean(),
                        }
-        self.log("loss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log("loss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True, batch_size=batch_size)
         self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
         inputs = self.get_input(batch, self.image_key)
+        batch_size = inputs.shape[0]
         reconstructions, posterior = self(inputs)
         aeloss = nn.MSELoss()(reconstructions, inputs)
         kl_loss = posterior.kl()
@@ -91,7 +93,7 @@ class VAE(Autoencoder):
                        "kl_loss": kl_loss.detach().mean(),
                        "rec_loss": aeloss.detach().mean(),
                        }
-        self.log("loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log("loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True, batch_size=batch_size)
         self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
         return loss
 

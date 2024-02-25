@@ -3,20 +3,21 @@ import torch.nn as nn
 import torch.nn.functional as F
 import lightning.pytorch as pl
 
-from modules.GAN.discriminator.discriminator import Discriminator2 as Discriminator
+from modules.GAN.discriminator.discriminator import Discriminator
 from modules.GAN.generator.generator import Generator
 
 class WGAN(pl.LightningModule):
-    def __init__(self, config, image_key="image", train_imbalance=0.5, gp_weight=10.0):
+    def __init__(self, config, image_key="image", train_imbalance=0.5, gp_weight=10.0, label_noise=0.0):
         super().__init__()
         self.config = config
+        config['discr_activation'] = nn.Identity()
         self.gp_weight = gp_weight
+        self.label_noise = label_noise
         self.train_imbalance = train_imbalance
         self.image_key = image_key
         self.generator = Generator(**config)
         self.discriminator = Discriminator(**config)
         self.automatic_optimization = False
-        self.criterion = nn.BCELoss()
 
     def get_input(self, batch, k):
         x = batch[k]
@@ -58,17 +59,17 @@ class WGAN(pl.LightningModule):
         latents = torch.randn(b, self.generator.latent_dim).to(self.device)
         fake = self.generator(latents)
 
-        labelNoise = torch.abs(torch.randn(b) * 0.1)  
-        real_labels = (torch.ones(b) - labelNoise).to(self.device)
-        fake_labels = -torch.ones(b).to(self.device)
+        labelNoise = torch.abs(torch.randn(b) * self.label_noise)  
+        valid = (torch.ones(b) - labelNoise).to(self.device)
+        fake = -torch.ones(b).to(self.device)
 
         real_score = torch.squeeze(self.discriminator(x))
         fake_score = torch.squeeze(self.discriminator(fake))
 
         gp_loss = self._gradient_penalty(x, fake)
 
-        real_score = self._wasserstein_distance(real_score, real_labels)
-        fake_score = self._wasserstein_distance(fake_score, fake_labels)
+        real_score = self._wasserstein_distance(real_score, valid)
+        fake_score = self._wasserstein_distance(fake_score, fake)
         loss = -real_score + fake_score + self.gp_weight * gp_loss
 
         self.manual_backward(loss)
@@ -104,13 +105,13 @@ class WGAN(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
         x = self.get_input(batch, self.image_key)
-
+        b, c, h, w = x.shape
         losses = self._discriminator_step(batch)
         if torch.rand(1) <= self.train_imbalance:
             gen_losses = self._generator_step(batch)
             losses.update(gen_losses)
 
-        self.log_dict(losses, prog_bar=True, logger=True, on_step=True, on_epoch=True)
+        self.log_dict(losses, prog_bar=True, logger=True, on_step=True, on_epoch=False, batch_size=b)
         return None
 
     def configure_optimizers(self):

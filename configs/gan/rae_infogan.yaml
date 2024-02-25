@@ -10,12 +10,12 @@ data:
     subset: img_64x64
 
 trainer:
-  max_epochs: 1000 
+  max_epochs: 100 
   logger:
     class_path: lightning.pytorch.loggers.WandbLogger
     init_args:
       name: run_25-02-2024-20:00:00
-      project: RAE_DCGAN
+      project: RAE_INFOGAN
       offline: False
       save_dir: ./log
   callbacks: 
@@ -26,12 +26,15 @@ trainer:
         rescale: False
 
 model:
-  class_path: models.GAN.dcgan.DCGAN
+  class_path: models.GAN.infogan.InfoGAN
   init_args:
-    image_key: "field"
+    image_key: field
+    label_key: labels
     train_imbalance: 0.2
     label_noise: 0.05
+    code_dim: 10
     config:
+      n_classes: 38
       lr_gen: 0.0002
       lr_dis: 0.0002
       b1: 0.5

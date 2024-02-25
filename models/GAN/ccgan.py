@@ -4,16 +4,17 @@ import torch.nn.functional as F
 import lightning.pytorch as pl
 
 from modules.GAN.discriminator.discriminator import Discriminator
-from modules.GAN.generator.generator import Generator
+from modules.GAN.generator.generator import ConditionedGenerator
 
-class DCGAN(pl.LightningModule):
-    def __init__(self, config, image_key="image", train_imbalance=0.5, label_noise=0.0):
+class CCGAN(pl.LightningModule):
+    def __init__(self, config, image_key="image", label_key="label", train_imbalance=0.5, label_noise=0.0):
         super().__init__()
         self.config = config
         self.train_imbalance = train_imbalance
         self.image_key = image_key
+        self.label_key = label_key
         self.label_noise = label_noise
-        self.generator = Generator(**config)
+        self.generator = ConditionedGenerator(**config)
         self.discriminator = Discriminator(**config)
         self.automatic_optimization = False
         self.adversarial_loss = nn.BCELoss()
@@ -27,12 +28,13 @@ class DCGAN(pl.LightningModule):
 
     def _discriminator_step(self, input):
         x = self.get_input(input, self.image_key)
+        label = self.get_input(input, self.label_key)
         b, c, h, w = x.shape
         _, opt_d = self.optimizers()
         opt_d.zero_grad()
 
         latents = torch.randn(b, self.generator.latent_dim).to(self.device)
-        fake = self.generator(latents)
+        fake = self.generator(latents, label)
 
         real_score = torch.squeeze(self.discriminator(x))
         fake_score = torch.squeeze(self.discriminator(fake))
@@ -59,13 +61,14 @@ class DCGAN(pl.LightningModule):
 
     def _generator_step(self, input):
         x = self.get_input(input, self.image_key)
+        label = self.get_input(input, self.label_key)
         b, c, h, w = x.shape
         opt_g, _ = self.optimizers()
 
         opt_g.zero_grad()
 
         latents = torch.randn(b, self.generator.latent_dim).to(self.device)
-        fake = self.generator(latents)
+        fake = self.generator(latents, label)
         fake_score = torch.squeeze(self.discriminator(fake))
         
         gLoss = self.adversarial_loss(fake_score, torch.ones(b).to(self.device))
@@ -75,13 +78,11 @@ class DCGAN(pl.LightningModule):
         return {"gen/loss": gLoss}
 
     def training_step(self, batch, batch_idx):
-        x = self.get_input(batch, self.image_key)
-        b, c, h, w = x.shape
         losses = self._discriminator_step(batch)
+        b, c, h, w = self.get_input(batch, self.image_key).shape
         if torch.rand(1) <= self.train_imbalance:
             gen_losses = self._generator_step(batch)
             losses.update(gen_losses)
-
         self.log_dict(losses, prog_bar=True, logger=True, on_step=True, on_epoch=False, batch_size=b)
         return None
 
@@ -109,10 +110,11 @@ class DCGAN(pl.LightningModule):
     def log_images(self, batch, **kwargs):
         log = dict()
         x = self.get_input(batch, self.image_key)
-        x = x.to(self.device)
+        l = self.get_input(batch, self.label_key)
+        x, l = x.to(self.device), l.to(self.device)
         b, c, h, w = x.shape
         latent = torch.randn(b, self.generator.latent_dim).to(self.device)
-        xrec = self.generator(latent)
+        xrec = self.generator(latent, l)
         if x.shape[1] > 3:
             # colorize with random projection
             assert xrec.shape[1] > 3

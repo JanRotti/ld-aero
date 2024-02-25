@@ -7,27 +7,30 @@ data:
     batch_size: 16
     num_workers: 0
     normalize: True
+    subset: img_64x64
 
 trainer:
-  max_epochs: 100 
+  max_epochs: 1000 
   logger:
     class_path: lightning.pytorch.loggers.WandbLogger
     init_args:
-      name: run_24-02-2024-13:00:00
+      name: run_25-02-2024-20:00:00
       project: RAE_WGAN
       offline: False
       save_dir: ./log
   callbacks: 
     - class_path: modules.callbacks.ImageLogger
       init_args:
-        batch_frequency: 1000
+        batch_frequency: 2000
         max_images: 8
         rescale: False
 
 model:
   class_path: models.GAN.wgan.WGAN
   init_args:
-    train_imbalance: 0.1
+    image_key: "field"
+    train_imbalance: 0.2
+    label_noise: 0.05
     config:
       lr_gen: 0.0002
       lr_dis: 0.0002
@@ -37,7 +40,7 @@ model:
       image_size: 
         - 64
         - 64
-      base_channels: 16
+      base_channels: 32
       channel_multipliers:
         - 2
         - 4
@@ -45,6 +48,7 @@ model:
         - 16
         - 32
       bias: False
-      latent_dim: 128
+      overexpand: True
+      latent_dim: 256
       final_activation: 
         class_path: torch.nn.modules.activation.Sigmoid
