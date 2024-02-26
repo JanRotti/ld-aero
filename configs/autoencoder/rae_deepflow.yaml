@@ -11,13 +11,13 @@ data:
 
 trainer:
   max_epochs: 1000 
-  logger:
-    class_path: lightning.pytorch.loggers.WandbLogger
-    init_args:
-      name: run_1
-      project: RAE_DEEPFLOW_VAE
-      offline: False
-      save_dir: ./log
+#  logger:
+#    class_path: lightning.pytorch.loggers.WandbLogger
+#    init_args:
+#      name: run_1
+#      project: RAE_DEEPFLOW_VAE
+#      offline: False
+#      save_dir: ./log
   callbacks: 
     - class_path: modules.callbacks.ImageLogger
       init_args:

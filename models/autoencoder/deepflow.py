@@ -11,15 +11,16 @@ from modules.embedding.vector_quantizer import VectorQuantizer2 as VectorQuantiz
 
 class DeepFlowVQVAE(Autoencoder):
 
-    def __init__(self, config, latent_dim, learning_rate=0.002, betas=(0.9, 0.99)):
+    def __init__(self, config, latent_dim: int, n_embeddings: int=100, image_key="image", learning_rate: float=0.002, betas=(0.9, 0.99)):
         super().__init__()
         
         self.learning_rate = learning_rate
         self.betas = betas
         self.encoder = Encoder(**config)
         self.decoder = Decoder(**config)
-        self.q_layer = VectorQuantizer(64, latent_dim)
+        self.q_layer = VectorQuantizer(n_embeddings, latent_dim)
         self.latent_dim = latent_dim
+        self.image_key = image_key
 
     def configure_optimizers(self):
         opt_ae = torch.optim.Adam(list(self.encoder.parameters())+
@@ -30,8 +31,8 @@ class DeepFlowVQVAE(Autoencoder):
 
     def training_step(self, data):
         mse = nn.MSELoss()
-        real_fields = self.get_input(data, "image")
-
+        real_fields = self.get_input(data, self.image_key)
+        real_fields = real_fields.to(self.device)
         lossDict = {}
         
         z_mean, z_logvar, z = self.encoder(real_fields)
@@ -51,11 +52,11 @@ class DeepFlowVQVAE(Autoencoder):
 
     def validation_step(self, data):
         mse = nn.MSELoss()
-        real_fields = self.get_input(data, "image")
-
+        real_fields = self.get_input(data, self.image_key)
+        real_fields = real_fields.to(self.device)
         lossDict = {}
 
-        z_mean,z_logvar,z = self.encoder(real_fields)
+        z_mean, z_logvar, z = self.encoder(real_fields)
         reconstruct = self.decoder(z)
         
         reconstruct_loss = mse(reconstruct, real_fields)

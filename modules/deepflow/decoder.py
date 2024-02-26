@@ -104,8 +104,8 @@ class ResLayer(nn.Module):
 
 
 class BaseLayer(nn.Module):
-    def __init__(self, name=None, num_heads=8, dropout=0.3, filters=64, head_size=4, multipliers=None):
-        super(BaseLayer, self).__init__()
+    def __init__(self, num_heads=8, dropout=0.3, filters=64, head_size=4, multipliers=None):
+        super().__init__()
         self.filters = filters
         self.multipliers = multipliers
         self.blocks = []
@@ -127,13 +127,11 @@ class BaseLayer(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, input_shape=None, output_shape=None, biasOnOff=True, init=None,
+    def __init__(self, input_shape=None, biasOnOff=True, init=None,
                  num_heads=8, filters_start=64, latent_dim=64, dropout=0.3, head_size=4, multipliers=None, scale_layers=0, database=None, **kwargs):
         super(Decoder, self).__init__()
         self.epoch = 0
-        output_dim = output_shape
-        self.output_dim = output_shape
-        self.input_dim = input_shape
+        self.input_shape = input_shape
         self.num_heads = num_heads
         self.head_size = head_size
         self.multpliers = multipliers
@@ -141,12 +139,13 @@ class Decoder(nn.Module):
         self.database = database
 
         f = filters_start
+        self.silu = torch.nn.SiLU()
         self.flatten = nn.Flatten()
         self.pxlshuffle = []
         self.pxlshuffle.append(nn.PixelShuffle(4))
-        self.c2d_0 = nn.Conv2d(input_shape[2], f, kernel_size=(3, 3), padding='same')
+        self.c2d_0 = nn.Conv2d(self.latent_dim, f, kernel_size=(3, 3), padding='same')
         self.c2d_concat = nn.Conv2d(f*2, f, kernel_size=(3, 3), padding='same')
-        self.baselayer = BaseLayer(name="BaseLayer", num_heads=num_heads, head_size=self.head_size, dropout=dropout, multipliers=self.multpliers, filters=f)
+        self.baselayer = BaseLayer(num_heads=num_heads, head_size=self.head_size, dropout=dropout, multipliers=self.multpliers, filters=f)
         self.mhab0 = MultiHeadAttentionBlock(latent_dim=latent_dim, output_dim=1, heads=self.num_heads, head_size=self.head_size,
                                              macMHA=True, macMLP=True, attention_map=False, mlp_second_dense=True,
                                              dropout=dropout)
@@ -155,31 +154,26 @@ class Decoder(nn.Module):
             self.pxlshuffle.append(PixelShuffle(scale=2, filter=f))
         f = filters_start
         self.bn_out = nn.BatchNorm2d(f)
-        self.conv2dOut0 = nn.Conv2d(f, output_dim[2], kernel_size=(3, 3), padding='same')
+        self.conv2dOut0 = nn.Conv2d(f, self.input_shape[0], kernel_size=(3, 3), padding='same')
 
-    def forward(self, inp, warmup=False):
-        bs = inp.shape[0]
-        freevars = inp.shape[1]
-        f = 32
-        repeat_num = int(np.log2(self.output_dim[2])) - 1
-        mult = 2 ** (repeat_num - 1)
-        curr_filters = f * mult
+    def forward(self, input):
+        b, l, wr, hr = input.shape
+        assert l == self.latent_dim
         scale_counter = 0
         layer_count = len(self.pxlshuffle)
 
-        generator = inp
-        generator = self.c2d_0(generator)
-        generator = F.swish(generator)
+        generator = self.c2d_0(input)
+        generator = self.silu(generator)
         generator_skip = generator
         generator = self.baselayer(generator)
         generator = torch.cat((generator_skip, generator), dim=1)
         generator = self.c2d_concat(generator)
         for i in range(scale_counter, layer_count-1):
             generator = self.pxlshuffle[scale_counter](generator)
-            generator = F.swish(generator)
+            generator = self.silu(generator)
             scale_counter += 1
         generator = self.bn_out(generator)
-        generator = F.swish(generator)
+        generator = self.silu(generator)
         generator = self.conv2dOut0(generator)
-        #out = generator.view(bs, self.output_dim[0], self.output_dim[1], self.output_dim[2])
+    
         return out
