@@ -69,9 +69,9 @@ class VAE(Autoencoder):
         kl_loss = torch.mean(kl_loss) * self.kl_weight
         loss = aeloss + kl_loss
 
-        log_dict_ae = {"loss": loss.clone().detach(),
-                       "kl_loss": kl_loss.detach(),
-                       "rec_loss": aeloss.detach(),
+        log_dict_ae = {"train/loss": loss.clone().detach(),
+                       "train/kl_loss": kl_loss.detach(),
+                       "train/rec_loss": aeloss.detach(),
                        }
 
         self.log_dict(log_dict_ae, prog_bar=True, logger=True, on_step=True, on_epoch=True, batch_size=batch_size)
@@ -86,9 +86,9 @@ class VAE(Autoencoder):
         kl_loss = torch.mean(kl_loss) * self.kl_weight
         loss = aeloss + kl_loss
 
-        log_dict_ae = {"loss": loss.clone().detach(),
-                       "kl_loss": kl_loss.detach(),
-                       "rec_loss": aeloss.detach(),
+        log_dict_ae = {"val/loss": loss.clone().detach(),
+                       "val/kl_loss": kl_loss.detach(),
+                       "val/rec_loss": aeloss.detach(),
                        }
 
         self.log_dict(log_dict_ae, prog_bar=True, logger=True, on_step=True, on_epoch=True, batch_size=batch_size)

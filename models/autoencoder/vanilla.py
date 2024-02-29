@@ -53,8 +53,8 @@ class VanillaAE(Autoencoder):
         loss = aeloss
 
         log_dict_ae = {
-                        "loss": loss.clone().detach(),
-                        "rec_loss": aeloss.detach(),
+                        "train/loss": loss.clone().detach(),
+                        "train/rec_loss": aeloss.detach(),
                        }
        
         self.log_dict(log_dict_ae, prog_bar=True, logger=True, on_step=True, on_epoch=True)
@@ -67,8 +67,8 @@ class VanillaAE(Autoencoder):
         loss = aeloss
 
         log_dict_ae = {
-                        "loss": loss.clone().detach(),
-                        "rec_loss": aeloss.detach(),
+                        "val/loss": loss.clone().detach(),
+                        "val/rec_loss": aeloss.detach(),
                        }
                        
         self.log_dict(log_dict_ae, prog_bar=True, logger=True, on_step=True, on_epoch=True)

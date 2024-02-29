@@ -11,29 +11,31 @@ data:
 
 trainer:
   max_epochs: 1000 
-#  logger:
-#    class_path: lightning.pytorch.loggers.WandbLogger
-#    init_args:
-#      name: run_1
-#      project: RAE_64x64_VAE
-#      offline: False
-#      save_dir: ./log
+  logger:
+    class_path: lightning.pytorch.loggers.WandbLogger
+    init_args:
+      name: check_OOM
+      project: RAE_64x64_VQVAE
+      offline: False
+      save_dir: ./log
   callbacks: 
     - class_path: modules.callbacks.ImageLogger
       init_args:
         batch_frequency: 1000
         max_images: 8
         rescale: False
-
+#    - class_path: lightning.pytorch.callbacks.DeviceStatsMonitor
+#      init_args:
+#        cpu_stats: True
 # TEST model
 model:
   class_path: models.autoencoder.vqvae.VQVAE
   init_args:
-    kl_weight: 0.001
+    kl_weight: 0.00001
     commitment_scale: 0.25
-    learning_rate: 0.001
+    learning_rate: 0.0002
     image_key: "field"
-    num_embeddings: 256
+    num_embeddings: 512
     betas: 
       - 0.5
       - 0.9
@@ -49,7 +51,7 @@ model:
         - 16
         - 32
       num_res_blocks: 2
-      dropout: 0.1
+      dropout: 0.0
       norm: bn
       attention_resolutions:
         - 1
