@@ -15,30 +15,27 @@ class VAE(Autoencoder):
                  ckpt_path=None,
                  ignore_keys=[],
                  image_key="image",
-                 colorize_nlabels=None,
-                 monitor=None,
                  kl_weight=0.00001,
                  learning_rate=0.001,
-                 betas=(0.9,0.99),
+                 betas=(0.9, 0.99),
                  **kwargs,
                  ):
         
         super(**kwargs).__init__()
+        self.save_hyperparameters(ignore=["ckpt_path", "image_key","ignore_keys"])
+
         self.image_key = image_key
         self.learning_rate = learning_rate
         self.betas = betas
         self.encoder = Encoder(**config)
         self.decoder = Decoder(**config)
+
         assert config["double_z"]
         self.embed_dim = config["z_channels"]
         self.quant_conv = torch.nn.Conv2d(2*config["z_channels"], 2*self.embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(self.embed_dim, config["z_channels"], 1)
         self.kl_weight = kl_weight
-        if colorize_nlabels is not None:
-            assert type(colorize_nlabels)==int
-            self.register_buffer("colorize", torch.randn(3, colorize_nlabels, 1, 1))
-        if monitor is not None:
-            self.monitor = monitor
+
         if ckpt_path is not None:
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
 
@@ -69,15 +66,15 @@ class VAE(Autoencoder):
 
         aeloss = nn.MSELoss()(reconstructions, inputs)
         kl_loss = posterior.kl()
-        kl_loss = torch.sum(kl_loss) / kl_loss.shape[0] * self.kl_weight
+        kl_loss = torch.mean(kl_loss) * self.kl_weight
         loss = aeloss + kl_loss
 
-        log_dict_ae = {"total_loss": loss.clone().detach().mean(),
-                       "kl_loss": kl_loss.detach().mean(),
-                       "rec_loss": aeloss.detach().mean(),
+        log_dict_ae = {"loss": loss.clone().detach(),
+                       "kl_loss": kl_loss.detach(),
+                       "rec_loss": aeloss.detach(),
                        }
-        self.log("loss", aeloss, prog_bar=True, logger=True, on_step=True, on_epoch=True, batch_size=batch_size)
-        self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
+
+        self.log_dict(log_dict_ae, prog_bar=True, logger=True, on_step=True, on_epoch=True, batch_size=batch_size)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -86,15 +83,15 @@ class VAE(Autoencoder):
         reconstructions, posterior = self(inputs)
         aeloss = nn.MSELoss()(reconstructions, inputs)
         kl_loss = posterior.kl()
-        kl_loss = torch.sum(kl_loss) / kl_loss.shape[0] * self.kl_weight
+        kl_loss = torch.mean(kl_loss) * self.kl_weight
         loss = aeloss + kl_loss
 
-        log_dict_ae = {"total_loss": loss.clone().detach().mean(),
-                       "kl_loss": kl_loss.detach().mean(),
-                       "rec_loss": aeloss.detach().mean(),
+        log_dict_ae = {"loss": loss.clone().detach(),
+                       "kl_loss": kl_loss.detach(),
+                       "rec_loss": aeloss.detach(),
                        }
-        self.log("loss", loss, prog_bar=True, logger=True, on_step=True, on_epoch=True, batch_size=batch_size)
-        self.log_dict(log_dict_ae, prog_bar=False, logger=True, on_step=True, on_epoch=False)
+
+        self.log_dict(log_dict_ae, prog_bar=True, logger=True, on_step=True, on_epoch=True, batch_size=batch_size)
         return loss
 
     def configure_optimizers(self):

@@ -34,31 +34,16 @@ model:
     betas: 
       - 0.9
       - 0.99
-    latent_dim: 512
+    latent_dim: 128
+    kl_weight: 0.000001
     config:
       input_shape: 
         - 8
         - 64
         - 64
-      output_shape: 
-        - 8
-        - 64
-        - 64
-      multipliers:
-        - 1
-        - 2
-        - 4
-        - 8
-        - 16
       base_channel: 32
-      latent_dim: 32
       image_layers: 2
-      head_size: 4
-      num_heads: 1
+      num_heads: 4
       dropout: 0.0
       norm: bn
-      attention_resolutions:
-        - 1
-        - 2
-        - 3
       

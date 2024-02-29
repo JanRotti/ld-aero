@@ -43,7 +43,6 @@ class Autoencoder(pl.LightningModule):
         x = batch[k]
         if len(x.shape) == 3:
             x = x[..., None]
-        #x = x.permute(0, 3, 1, 2).to(memory_format=torch.contiguous_format).float()
         return x
 
     @torch.no_grad()
@@ -55,14 +54,14 @@ class Autoencoder(pl.LightningModule):
             xrec, posterior = self(x)
             random_tensor = torch.randn_like(posterior.sample())
             random_tensor = torch.clamp(random_tensor, posterior.sample().min(), posterior.sample().max())
+            samples = self.decode(random_tensor)
             if x.shape[1] > 3:
                 # colorize with random projection
                 assert xrec.shape[1] > 3
                 x = self.to_rgb(x)
                 xrec = self.to_rgb(xrec)
-                log["samples"] = self.to_rgb(self.decode(random_tensor))
-            else:
-                log["samples"] = self.decode(random_tensor)
+                samples = self.to_rgb(samples)
+            log["samples"] = samples
             log["reconstructions"] = xrec
         log["inputs"] = x
         return log
@@ -71,5 +70,5 @@ class Autoencoder(pl.LightningModule):
         if not hasattr(self, "colorize"):
             self.register_buffer("colorize", torch.randn(3, x.shape[1], 1, 1).to(x))
         x = F.conv2d(x, weight=self.colorize)
-        x = 2.*(x-x.min())/(x.max()-x.min()) - 1.
+        x = 2.*(x - x.min())/(x.max() - x.min()) - 1. 
         return x

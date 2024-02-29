@@ -16,7 +16,6 @@ class AutoencoderKL(pl.LightningModule):
                  ckpt_path=None,
                  ignore_keys=[],
                  image_key="image",
-                 colorize_nlabels=None,
                  monitor=None,
                  ):
         
@@ -30,9 +29,6 @@ class AutoencoderKL(pl.LightningModule):
         self.quant_conv = torch.nn.Conv2d(2*enc_config["z_channels"], 2*embed_dim, 1)
         self.post_quant_conv = torch.nn.Conv2d(embed_dim, enc_config["z_channels"], 1)
         self.embed_dim = embed_dim
-        if colorize_nlabels is not None:
-            assert type(colorize_nlabels)==int
-            self.register_buffer("colorize", torch.randn(3, colorize_nlabels, 1, 1))
         if monitor is not None:
             self.monitor = monitor
         if ckpt_path is not None:

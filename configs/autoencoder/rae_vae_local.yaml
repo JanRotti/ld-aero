@@ -11,13 +11,13 @@ data:
 
 trainer:
   max_epochs: 1000 
-  logger:
-    class_path: lightning.pytorch.loggers.WandbLogger
-    init_args:
-      name: 29.02.24-12:30
-      project: RAE_64x64_VAE
-      offline: False
-      save_dir: ./log
+#  logger:
+#    class_path: lightning.pytorch.loggers.WandbLogger
+#    init_args:
+#      name: test_run
+#      project: RAE_64x64_VAE
+#      offline: False
+#      save_dir: ./log
   callbacks: 
     - class_path: modules.callbacks.ImageLogger
       init_args:

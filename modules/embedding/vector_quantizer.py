@@ -128,7 +128,7 @@ class VectorQuantizer2(nn.Module):
         min_encodings = None
 
         # compute loss for embedding
-        loss = torch.mean((z_q.detach()-z)**2) + self.beta * \
+        loss = self.beta * torch.mean((z_q.detach()-z)**2) + \
                 torch.mean((z_q - z.detach()) ** 2)
 
         # preserve gradients

@@ -7,7 +7,6 @@ from ..misc import Downsample
 from ..util import get_norm
 
 class Encoder(nn.Module):
-    
     def __init__(self, 
         in_channel,
         base_channel,
@@ -104,3 +103,4 @@ class Encoder(nn.Module):
         h = self.norm_out(h)
         h = self.conv_out(h)
         return h
+
