@@ -14,7 +14,6 @@ trainer:
   logger:
     class_path: lightning.pytorch.loggers.WandbLogger
     init_args:
-      name: check_OOM
       project: RAE_64x64_VQVAE
       offline: False
       save_dir: ./log
@@ -31,7 +30,7 @@ trainer:
 model:
   class_path: models.autoencoder.vqvae.VQVAE
   init_args:
-    kl_weight: 0.00001
+    kl_weight: 0.01
     commitment_scale: 0.25
     learning_rate: 0.0002
     image_key: "field"

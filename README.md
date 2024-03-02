@@ -9,6 +9,12 @@ The code base is mostly based on adapted versions of existing code repositories 
 
 # Comments
 
+## Latent Diffusion Model
+1. VQVAE and general training: Found OOM error when running on GPU node on cluster
+    - **Problem**: Unclear yet, assumption either gradient accumulation (memory leak) or too little accessible RAM
+    - **Solution**: Default RAM setting for slurm jobs is 1.8 GB RAM, which might be too little. Adding '#SBATCH --mem=8000' for 8GB should alleviate the problem.  
+    - **Codechange**: None! 
+
 ## Generative Adversarial Networks
 1. Generator, DCGAN: Found checkerboard artifacts on samples.
     - **Problem**: Deconvolutions, often used in the generator to upsample images, can introduce checkerboard patterns due to uneven overlap in the kernel during the upsampling process.

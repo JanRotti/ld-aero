@@ -20,7 +20,7 @@ class VectorQuantizer(nn.Module):
         self.beta = beta
 
         self.embedding = nn.Embedding(self.K, self.D)
-        self.embedding.weight.data.uniform_(-1 / self.K, 1 / self.K)
+        self.embedding.weight.data.uniform_(-1.0 / self.K, 1.0 / self.K)
 
     def forward(self, latents: torch.tensor) -> torch.tensor:
         latents = latents.permute(0, 2, 3, 1).contiguous()  # [B x D x H x W] -> [B x H x W x D]

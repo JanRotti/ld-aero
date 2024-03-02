@@ -5,7 +5,7 @@ import torch.nn.functional as F
 
 from modules.decoder import Decoder, PSDecoder
 from modules.encoder import Encoder
-from modules.embedding import VectorQuantizer2 as VectorQuantizer
+from modules.embedding.vector_quantizer import VectorQuantizer2 as VectorQuantizer
 from modules.distribution import DiagonalGaussianDistribution
 
 from .base import Autoencoder
@@ -24,7 +24,7 @@ class VQVAE(Autoencoder):
                  **kwargs,
                  ):
         
-        super().__init__()
+        super(**kwargs).__init__()
         self.save_hyperparameters(ignore=["ckpt_path", "image_key","ignore_keys"])
         self.image_key = image_key
         self.commitment_scale = commitment_scale
@@ -45,9 +45,7 @@ class VQVAE(Autoencoder):
             self.init_from_ckpt(ckpt_path, ignore_keys=ignore_keys)
 
     def encode(self, x, return_loss=False, sample_posterior=True):
-        h = self.encoder(x)
-        z = self.quant_conv(h)
-        posterior = DiagonalGaussianDistribution(z)
+        posterior = self._encode(x)
         if sample_posterior:
             z = posterior.sample()
         else:
@@ -56,6 +54,12 @@ class VQVAE(Autoencoder):
         if return_loss:
             return quant, emb_loss, posterior.kl()
         return quant
+
+    def _encode(self, x):
+        h = self.encoder(x)
+        z = self.quant_conv(h)
+        posterior = DiagonalGaussianDistribution(z)
+        return posterior
 
     def decode(self, z):
         z = self.post_quant_conv(z)
@@ -75,10 +79,10 @@ class VQVAE(Autoencoder):
     def training_step(self, batch, batch_idx):
         inputs = self.get_input(batch, self.image_key)
         reconstructions, emb_loss, kl_loss = self(inputs, return_loss=True)
-        
-        kl_loss = torch.mean(kl_loss) * self.kl_weight
+
+        kl_loss = kl_loss.mean() * self.kl_weight
         aeloss = nn.MSELoss()(reconstructions, inputs)
-        vq_loss = emb_loss
+        vq_loss = emb_loss.mean()
 
         loss = aeloss + vq_loss + kl_loss
 
@@ -95,9 +99,9 @@ class VQVAE(Autoencoder):
     def validation_step(self, batch, batch_idx):
         inputs = self.get_input(batch, self.image_key)
         reconstructions, emb_loss, kl_loss = self(inputs, return_loss=True)
-        kl_loss = kl_loss * self.kl_weight
+        kl_loss = kl_loss.mean() * self.kl_weight
         aeloss = nn.MSELoss()(reconstructions, inputs)
-        vq_loss = emb_loss
+        vq_loss = emb_loss.mean()
         loss = aeloss + vq_loss + kl_loss
 
         log_dict_ae = {
@@ -113,6 +117,7 @@ class VQVAE(Autoencoder):
     def configure_optimizers(self):
         opt_ae = torch.optim.Adam(list(self.encoder.parameters())+
                                   list(self.decoder.parameters())+
+                                  list(self.quantize.parameters())+
                                   list(self.quant_conv.parameters())+
                                   list(self.post_quant_conv.parameters()),
                                   lr=self.learning_rate, betas=self.betas)

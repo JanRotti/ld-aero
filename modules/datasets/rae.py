@@ -44,7 +44,7 @@ class RAE(Dataset):
 
         output = {}
         for key in sample.keys():
-            if key=="var_names":
+            if key in["var_names", "function_descriptors", "gradient_descriptors"]:
                 output[key] = sample[key].tolist()
             elif key=="field":
                 tmp = torch.permute(torch.as_tensor(sample[key], dtype=torch.float), (2,0,1))
