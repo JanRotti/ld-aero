@@ -46,8 +46,10 @@ class RAE(Dataset):
 
         output = {}
         for key in sample.keys():
-            if key in["var_names", "function_descriptors", "gradient_descriptors"]:
+            if key in["var_names", "function_descriptors"]:
                 output[key] = sample[key].tolist()
+            elif key in ["gradient_descriptors", "gradients"]:
+                continue # Skip due to problem
             elif key=="field":
                 tmp = torch.permute(torch.as_tensor(sample[key], dtype=torch.float), (2,0,1))
                 output[key] = self.norm(tmp) if self.normalize else tmp
