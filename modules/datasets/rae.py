@@ -25,8 +25,10 @@ class RAE(Dataset):
         self.subset = subset
         self.file_list = os.listdir(os.path.join(root_dir, subset))
         self.normalize = normalize
-        self.max = torch.Tensor([1.3454, 3.7994, 1.9963, 1.0358, 0.6987, 1.5153, 1.1502, 1.1357])
-        self.min = torch.Tensor([0.0000, 0.0000, 0.0000, -0.6520, -0.5926,  0.0000, -1.7431, 0.0000])
+        self.max = torch.Tensor([1.9963, 1.0358, 0.6987, 1.5153, 1.1502, 1.1357])
+        self.min = torch.Tensor([0.0000, -0.6520, -0.5926,  0.0000, -1.7431, 0.0000])
+        #self.max = torch.Tensor([1.3454, 3.7994, 1.9963, 1.0358, 0.6987, 1.5153, 1.1502, 1.1357])
+        #self.min = torch.Tensor([0.0000, 0.0000, 0.0000, -0.6520, -0.5926,  0.0000, -1.7431, 0.0000])
         self.norm = torchvision.transforms.Normalize(mean=self.min, std=self.max-self.min)
 
     def __len__(self):

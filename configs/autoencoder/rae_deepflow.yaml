@@ -38,7 +38,7 @@ model:
     kl_weight: 0.000001
     config:
       input_shape: 
-        - 8
+        - 6
         - 64
         - 64
       base_channel: 32
