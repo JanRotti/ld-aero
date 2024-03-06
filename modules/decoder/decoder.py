@@ -18,7 +18,7 @@ class Decoder(nn.Module):
         attention_resolutions=(),
         time_emb_dim=None,
         dropout=0.0,
-        norm="bn",
+        norm=None,
         num_groups=32,
         final_activation=nn.Sigmoid(),
         **kwargs

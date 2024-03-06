@@ -6,6 +6,7 @@ import importlib
 
 import os, hashlib
 import torch
+import math
 import numpy as np
 import torch.nn as nn
 from collections import abc
@@ -224,7 +225,6 @@ def extract(a, t, x_shape):
     out = a.gather(-1, t)
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
 
-
 def generate_cosine_schedule(T, s=0.008):
     def f(t, T):
         return (np.cos((t / T + s) / (1 + s) * np.pi / 2)) ** 2
@@ -240,26 +240,115 @@ def generate_cosine_schedule(T, s=0.008):
     for t in range(1, T + 1):
         betas.append(min(1 - alphas[t] / alphas[t - 1], 0.999))
     
-    return np.array(betas)
+    return torch.Tensor(betas)
 
 def generate_linear_schedule(T, low, high):
-    return np.linspace(low, high, T)
+    return torch.linspace(low, high, T)
 
 # Answer from: https://discuss.pytorch.org/t/is-there-something-like-keras-utils-to-categorical-in-pytorch/5960
 def to_categorical(y, num_classes):
     """ 1-hot encodes a tensor """
     return np.eye(num_classes, dtype='uint8')[y]
 
-def get_norm(norm, num_channels, num_groups):
+def get_norm(norm, num_channels, num_groups=32, **kwargs):
     if norm == "in":
-        return nn.InstanceNorm2d(num_channels, affine=True)
+        return nn.InstanceNorm2d(num_channels, affine=True, **kwargs)
     elif norm == "bn":
-        return nn.BatchNorm2d(num_channels)
+        return nn.BatchNorm2d(num_channels, **kwargs)
     elif norm == "gn":
-        return nn.GroupNorm(num_groups, num_channels)
+        return nn.GroupNorm(num_groups, num_channels, **kwargs)
     elif norm is None:
         return nn.Identity()
     else:
         raise ValueError("unknown normalization type")
     
+def get_activation(activation, **kwargs):
+    if activation == "relu":
+        return nn.ReLU(**kwargs)
+    elif activation == "lrelu":
+        return nn.LeakyReLU(**kwargs)
+    elif activation == "gelu":
+        return nn.GELU()
+    elif activation == "silu":
+        return nn.SiLU()
+    elif activation == "tanh":
+        return nn.Tanh()
+    elif activation == "sigmoid":
+        return nn.Sigmoid()
+    elif activation == "none":
+        return nn.Identity()
+    else:
+        raise ValueError("unknown activation type")
 
+
+def noise_like(shape, device, repeat=False):
+    repeat_noise = lambda: torch.randn((1, *shape[1:]), device=device).repeat(shape[0], *((1,) * (len(shape) - 1)))
+    noise = lambda: torch.randn(shape, device=device)
+    return repeat_noise() if repeat else noise()
+
+def extract_into_tensor(a, t, x_shape):
+    b, *_ = t.shape
+    out = a.gather(-1, t)
+    return out.reshape(b, *((1,) * (len(x_shape) - 1)))
+
+def make_beta_schedule(schedule, n_timestep, linear_start=1e-4, linear_end=2e-2, cosine_s=8e-3):
+    if schedule == "linear":
+        betas = (
+                torch.linspace(linear_start ** 0.5, linear_end ** 0.5, n_timestep, dtype=torch.float64) ** 2
+        )
+
+    elif schedule == "cosine":
+        timesteps = (
+                torch.arange(n_timestep + 1, dtype=torch.float64) / n_timestep + cosine_s
+        )
+        alphas = timesteps / (1 + cosine_s) * np.pi / 2
+        alphas = torch.cos(alphas).pow(2)
+        alphas = alphas / alphas[0]
+        betas = 1 - alphas[1:] / alphas[:-1]
+        betas = torch.clip(betas, a_min=0, a_max=0.999)
+
+    elif schedule == "sqrt_linear":
+        betas = torch.linspace(linear_start, linear_end, n_timestep, dtype=torch.float64)
+    elif schedule == "sqrt":
+        betas = torch.linspace(linear_start, linear_end, n_timestep, dtype=torch.float64) ** 0.5
+    else:
+        raise ValueError(f"schedule '{schedule}' unknown.")
+    return betas.numpy()
+
+
+
+def linear_beta_schedule(timesteps):
+    """
+    linear schedule, proposed in original ddpm paper
+    """
+    scale = 1000 / timesteps
+    beta_start = scale * 0.0001
+    beta_end = scale * 0.02
+    return torch.linspace(beta_start, beta_end, timesteps, dtype=torch.float)
+
+def cosine_beta_schedule(timesteps, s = 0.008):
+    """
+    cosine schedule
+    as proposed in https://openreview.net/forum?id=-NEXDKk8gZ
+    """
+    steps = timesteps + 1
+    t = torch.linspace(0, timesteps, steps, dtype=torch.float) / timesteps
+    alphas_cumprod = torch.cos((t + s) / (1 + s) * math.pi * 0.5) ** 2
+    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
+    betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
+    return torch.clip(betas, 0, 0.999)
+
+def sigmoid_beta_schedule(timesteps, start = -3, end = 3, tau = 1, clamp_min = 1e-5):
+    """
+    sigmoid schedule
+    proposed in https://arxiv.org/abs/2212.11972 - Figure 8
+    better for images > 64x64, when used during training
+    """
+    steps = timesteps + 1
+    t = torch.linspace(0, timesteps, steps, dtype=torch.float) / timesteps
+    v_start = torch.tensor(start / tau).sigmoid()
+    v_end = torch.tensor(end / tau).sigmoid()
+    alphas_cumprod = (-((t * (end - start) + start) / tau).sigmoid() + v_end) / (v_end - v_start)
+    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
+    betas = 1 - (alphas_cumprod[1:] / alphas_cumprod[:-1])
+    return torch.clip(betas, 0, 0.999)

@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from functools import partial
 
-from ..util import extract
+from modules.util import extract
 
 class EMA():
     def __init__(self, decay):
@@ -23,7 +23,7 @@ class EMA():
             ema_params.data = self.update_average(old, new)
 
 
-class GaussianDiffusion(nn.Module):
+class GaussianDiffusion(pl.LightningModule):
     __doc__ = r"""Gaussian Diffusion model. Forwarding through the module returns diffusion reversal scalar loss tensor.
 
     Input:
@@ -51,6 +51,7 @@ class GaussianDiffusion(nn.Module):
         ema_decay=0.9999,
         ema_start=5000,
         ema_update_rate=1,
+        **kwargs
     ):
         super().__init__()
 

@@ -6,6 +6,7 @@ The code base is mostly based on adapted versions of existing code repositories 
 1. [latent-diffusion](https://github.com/CompVis/latent-diffusion) 
 2. [Pytorch-VAE](https://github.com/AntixK/PyTorch-VAE)
 3. [taming-transformer](https://github.com/CompVis/taming-transformers)
+4. [denoising-diffusion-pytorch](https://github.com/lucidrains/denoising-diffusion-pytorch)
 
 # Comments
 
@@ -22,3 +23,7 @@ The code base is mostly based on adapted versions of existing code repositories 
     Resize and Convolution: Instead of deconvolution, use simpler upsampling techniques like nearest-neighbor or bilinear interpolation, followed by regular convolution layers.
     Kernel Size Adjustments: Experiment with kernel sizes that are divisible by the stride. This ensures better overlap during the upsampling.
     - **Codechange**: Replaced 'ConvTransposed2d' with parameters $(4,2,1)$ with combination of 'Upsample(2)' and inplace 'Conv2d($\cdot,\cdot,3,1,1$).'
+
+
+## nn.Sequential
+1. Using nn.Sequential to wrap layers and blocks into respective blocks does not work due to a restrictive forward pass. nn.Sequential does not allow passing of multiple input arguments. TODO: fix problem with modules.diffusion.unet

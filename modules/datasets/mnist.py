@@ -17,6 +17,7 @@ class ModifiedMNIST(Dataset):
 
     def __getitem__(self, index):
         image, label = self.mnist_dataset[index]
+        label = torch.nn.functional.one_hot(torch.as_tensor(label), num_classes=10).float()
         return {"image": image, "label": label}  
 
 class MNISTDataModule(pl.LightningDataModule):

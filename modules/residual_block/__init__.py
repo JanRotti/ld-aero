@@ -1,1 +1,1 @@
-from .res_block import ResidualBlock
+from .res_block import ResidualBlock, ResBlock

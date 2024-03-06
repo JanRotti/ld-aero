@@ -1,0 +1,61 @@
+seed_everything: 42
+ckpt_path: null
+
+data:
+  class_path: modules.datasets.rae.RAEDataModule
+  init_args:
+    batch_size: 16
+    num_workers: 0
+    normalize: True
+    subset: img_64x64
+
+trainer:
+  max_epochs: 1000
+  logger:
+    class_path: lightning.pytorch.loggers.WandbLogger
+    init_args:
+      project: RAE_64x64_DIFFUSION
+      offline: False
+      save_dir: ./log
+  callbacks: 
+    - class_path: modules.callbacks.ImageLogger
+      init_args:
+        batch_frequency: 1000
+        max_images: 8
+        rescale: False
+
+model:
+  class_path: models.diffusion.ddpm.DDPM
+  init_args:
+    model: 
+      class_path: modules.diffusion.unet.UNet
+      init_args:
+        in_channels: 6
+        base_channels: 32
+        channel_mults:
+          - 1
+          - 2
+          - 4
+          - 8
+        num_res_blocks: 2
+        attention_resolutions:
+          - 1
+          - 2
+        time_emb_dim: 1000
+        dropout: 0.0
+        norm: "gn"
+        num_groups: 16
+
+    image_size:
+      - 64
+      - 64
+    in_channels: 6
+    timesteps: 1000
+    learning_rate: 0.0001
+    opt_betas:
+      - 0.9
+      - 0.999
+    objective: eps
+    metric: l2
+    image_key: field
+    beta_schedule: cosine

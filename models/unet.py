@@ -1,20 +1,21 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import sys
 
 from modules.util import get_norm
 from modules.embedding import PositionalEmbedding
 from modules.misc.downsample import Downsample
 from modules.misc.upsample import Upsample
-from modules.residual_block import ResidualBlock
+from modules.residual_block import ResidualBlock, ResBlock
 
 class UNet(nn.Module):
     __doc__ = """UNet model used to estimate noise.
 
     Input:
-        x: tensor of shape (N, in_channels, H, W)
-        time_emb: time embedding tensor of shape (N, time_emb_dim) or None if the block doesn't use time conditioning
-        y: classes tensor of shape (N) or None if the block doesn't use class conditioning
+        x: tensor of shape (N, in_channels, H, W)
+        time_emb: time embedding tensor of shape (N, time_emb_dim) or None if the block doesn't use time conditioning
+        y: classes tensor of shape (N) or None if the block doesn't use class conditioning
     Output:
         tensor of shape (N, out_channels, H, W)
     Args:
@@ -41,7 +42,6 @@ class UNet(nn.Module):
         time_emb_dim=None,
         time_emb_scale=1.0,
         num_classes=None,
-        activation=F.relu,
         dropout=0.1,
         attention_resolutions=(),
         norm="gn",
@@ -49,7 +49,7 @@ class UNet(nn.Module):
         initial_pad=0,
     ):
         super().__init__()
-
+        activation=nn.ReLU()
         self.activation = activation
         self.initial_pad = initial_pad
 
@@ -138,7 +138,7 @@ class UNet(nn.Module):
                 self.ups.append(Upsample(now_channels))
         
         assert len(channels) == 0
-        
+
         self.out_norm = get_norm(norm, base_channels, num_groups)
         self.out_conv = nn.Conv2d(base_channels, img_channels, 3, padding=1)
     
@@ -173,7 +173,7 @@ class UNet(nn.Module):
             if isinstance(layer, ResidualBlock):
                 x = torch.cat([x, skips.pop()], dim=1)
             x = layer(x, time_emb, y)
-
+            
         x = self.activation(self.out_norm(x))
         x = self.out_conv(x)
         

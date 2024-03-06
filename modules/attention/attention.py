@@ -1,29 +1,26 @@
 import torch
 import torch.nn as nn
 
-from ..util import get_norm
-
 class AttentionBlock(nn.Module):
     __doc__ = r"""Applies QKV self-attention with a residual connection.
     
     Input:
         x: tensor of shape (N, in_channels, H, W)
-        norm (string or None): which normalization to use (instance, group, batch, or none). Default: "gn"
-        num_groups (int): number of groups used in group normalization. Default: 32
+        norm (None or nn.Module): which normalization to use. Default: None
     Output:
         tensor of shape (N, in_channels, H, W)
     Args:
         in_channels (int): number of input channels
     """
-    def __init__(self, in_channels, norm="gn", num_groups=32):
+    def __init__(self, in_channels, norm=None):
         super().__init__()
         
         self.in_channels = in_channels
-        self.norm = get_norm(norm, in_channels, num_groups)
+        self.norm = norm if norm is not None else nn.Identity()
         self.to_qkv = nn.Conv2d(in_channels, in_channels * 3, 1)
         self.to_out = nn.Conv2d(in_channels, in_channels, 1)
 
-    def forward(self, x):
+    def forward(self, x, time=None, y=None):
         b, c, h, w = x.shape
         q, k, v = torch.split(self.to_qkv(self.norm(x)), self.in_channels, dim=1)
 
@@ -47,25 +44,24 @@ class MultiHeadAttentionBlock(nn.Module):
     
     Input:
         x: tensor of shape (N, in_channels, H, W)
-        norm (string or None): which normalization to use (instance, group, batch, or none). Default: "gn"
-        num_groups (int): number of groups used in group normalization. Default: 32
+        norm (None or nn.Module): which normalization to use. Default: None
         num_heads (int): number of attention heads. Default: 4
     Output:
         tensor of shape (N, in_channels, H, W)
     Args:
         in_channels (int): number of input channels
     """
-    def __init__(self, in_channels, norm="gn", num_groups=32, num_heads=4):
+    def __init__(self, in_channels, norm=None, num_heads=4):
         super().__init__()
         
         self.in_channels = in_channels
-        self.norm = get_norm(norm, in_channels, num_groups)
+        self.norm = norm if norm is not None else nn.Identity()
         self.num_heads = num_heads
         
         self.to_qkv = nn.Conv2d(in_channels, in_channels * 3 * num_heads, 1)
         self.to_out = nn.Conv2d(in_channels * num_heads, in_channels, 1)
 
-    def forward(self, x):
+    def forward(self, x, time=None, y=None):
         b, c, h, w = x.shape
         qkv = self.to_qkv(self.norm(x))
         qkv = qkv.view(b, self.num_heads, -1, h, w)
